@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import { atomWithRefresh, unwrap } from 'jotai/utils'
+import { RESET, atomWithRefresh, atomWithStorage, unwrap } from 'jotai/utils'
 import { fetchTasks } from '../api/todos'
 import type { Filter, Task } from '../types/todo'
 
@@ -16,10 +16,23 @@ export const fetchedTasksAtom = atomWithRefresh((_get, { signal }) => fetchTasks
 const fetchedTasksValueAtom = unwrap(fetchedTasksAtom, (prev) => prev ?? [])
 
 // 画面で編集したタスク。まだ一度も編集していなければ null
-export const editedTasksAtom = atom<Task[] | null>(null)
+// localStorage の "mini-todo-jotai:tasks" に JSON で保存し、再読み込みしても残す。
+// getOnInit: true で、最初の表示から保存済みの値を使う
+export const editedTasksAtom = atomWithStorage<Task[] | null>(
+  'mini-todo-jotai:tasks',
+  null,
+  undefined,
+  { getOnInit: true },
+)
 
 // 画面に出すタスクの一覧。編集済みならその配列、まだなら API の結果
 export const tasksAtom = atom((get) => get(editedTasksAtom) ?? get(fetchedTasksValueAtom))
+
+// 一覧を表示できる状態か。保存済みの編集があれば通信を待たずに true、
+// なければ API の取得が終わるまで待つ Promise を返す（取得に失敗したらエラーになる）
+export const tasksReadyAtom = atom((get) =>
+  get(editedTasksAtom) !== null ? true : get(fetchedTasksAtom).then(() => true),
+)
 
 // 絞り込み条件に合うタスクだけを返す（引数と戻り値に型を付けた関数）
 export function filterTasks(tasks: Task[], filter: Filter): Task[] {
@@ -63,4 +76,9 @@ export const toggleTaskAtom = atom(null, (get, set, id: number) => {
       task.id === id ? { ...task, completed: !task.completed } : task,
     ),
   )
+})
+
+// サンプルに戻す：保存した編集を消す（RESET）。一覧は API の結果に戻る
+export const resetTasksAtom = atom(null, (_get, set) => {
+  set(editedTasksAtom, RESET)
 })
