@@ -1,5 +1,6 @@
 # スキルチェック試作品
 
+- リポジトリ：[SK-Shun/mini-todo](https://github.com/SK-Shun/mini-todo)
 - ハンズオンガイド：[ミニTODOアプリ ハンズオンガイド](https://claude.ai/code/artifact/dec6f9d9-59ed-48e9-89b2-8464756f49cd)
 
 ## jotai導入
