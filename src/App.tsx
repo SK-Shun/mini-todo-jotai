@@ -1,126 +1,26 @@
-import { useEffect, useState } from 'react'
-import { fetchTasks } from './api/todos'
-import FilterButtons from './components/FilterButtons'
-import TodoForm from './components/TodoForm'
-import TodoList from './components/TodoList'
-import type { Filter, Task } from './types/todo'
-
-// 絞り込み条件に合うタスクだけを返す（引数と戻り値に型を付けた関数）
-function filterTasks(tasks: Task[], filter: Filter): Task[] {
-  switch (filter) {
-    case 'active':
-      return tasks.filter((task) => !task.completed)
-    case 'completed':
-      return tasks.filter((task) => task.completed)
-    case 'all':
-      return tasks
-  }
-}
+import { useSetAtom } from 'jotai'
+import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
+import LoadError from './components/LoadError'
+import Loading from './components/Loading'
+import TaskBoard from './components/TaskBoard'
+import { fetchedTasksAtom } from './state/todo'
 
 function App() {
-  // state：タスクの配列。最初は空で、APIから取得できたら入れ替える
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [filter, setFilter] = useState<Filter>('all')
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  // 再試行ボタンで1増やす。useEffect の依存配列に入れて、変わったら取得し直す
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    // この回の通信を途中で止めるための道具
-    const controller = new AbortController()
-
-    const loadTasks = async () => {
-      try {
-        const fetchedTasks = await fetchTasks(controller.signal)
-        setTasks(fetchedTasks)
-      } catch (error) {
-        // クリーンアップで止めた通信はエラーとして扱わない
-        if (controller.signal.aborted) return
-        const message = error instanceof Error ? error.message : String(error)
-        setErrorMessage(`サンプルタスクを読み込めませんでした（${message}）`)
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    loadTasks()
-
-    // クリーンアップ：次に effect を実行する前と、画面から消えるときに呼ばれる
-    return () => {
-      controller.abort()
-    }
-  }, [reloadKey])
-
-  // 再試行：表示を「通信中」に戻し、reloadKey を変えて effect をもう一度動かす
-  const retry = () => {
-    setIsLoading(true)
-    setErrorMessage(null)
-    setReloadKey(reloadKey + 1)
-  }
-
-  // 追加：元の配列を展開してコピーし、末尾に新しいタスクを足した「新しい配列」を作る
-  const addTask = (title: string) => {
-    const newTask: Task = { id: Date.now(), title, completed: false }
-    setTasks([...tasks, newTask])
-  }
-
-  // 削除：指定した id 以外を残した新しい配列を作る（filter）
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id))
-  }
-
-  // 完了の切り替え：指定した id のタスクだけ、completed を反転したコピーに差し替える（map）
-  const toggleTask = (id: number) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
-    )
-  }
-
-  // 派生データ：state から毎回計算する値（state には入れない）
-  const visibleTasks = filterTasks(tasks, filter)
-  const activeCount = tasks.filter((task) => !task.completed).length
+  // fetchedTasksAtom に引数なしで書き込むと、API をもう一度呼ぶ（atomWithRefresh）
+  const refreshTasks = useSetAtom(fetchedTasksAtom)
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto max-w-xl rounded-xl bg-white p-6 shadow-md">
         <h1 className="mb-6 text-2xl font-bold text-slate-800">ミニTODO</h1>
 
-        <TodoForm onAdd={addTask} disabled={isLoading} />
-
-        <FilterButtons current={filter} onChange={setFilter} />
-
-        {errorMessage && (
-          <div
-            role="alert"
-            className="mb-4 flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            <span>{errorMessage}</span>
-            <button
-              type="button"
-              onClick={retry}
-              className="shrink-0 cursor-pointer rounded-md border border-red-300 bg-white px-3 py-1 font-medium hover:bg-red-100"
-            >
-              再試行
-            </button>
-          </div>
-        )}
-
-        {isLoading ? (
-          <p role="status" className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
-            <span className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-            読み込み中…
-          </p>
-        ) : (
-          <>
-            <TodoList tasks={visibleTasks} onToggle={toggleTask} onDelete={deleteTask} />
-            <p className="mt-4 text-sm text-slate-600">未完了：{activeCount} 件</p>
-          </>
-        )}
+        {/* 再試行ボタン → onReset で取り直してから、もう一度 TaskBoard を表示する */}
+        <ErrorBoundary FallbackComponent={LoadError} onReset={() => refreshTasks()}>
+          <Suspense fallback={<Loading />}>
+            <TaskBoard />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </main>
   )

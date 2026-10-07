@@ -1,19 +1,18 @@
+import { useSetAtom } from 'jotai'
 import { useState, type SubmitEvent } from 'react'
+import { addTaskAtom } from '../state/todo'
 
-type TodoFormProps = {
-  onAdd: (title: string) => void
-  disabled: boolean
-}
-
-function TodoForm({ onAdd, disabled }: TodoFormProps) {
-  // 入力欄の文字列はこのコンポーネントの state で持つ
+function TodoForm() {
+  // 入力中の文字列はこのコンポーネントだけが使うので、useState のままにする
   const [title, setTitle] = useState('')
+  // 書き込み用atomを呼ぶ関数だけを受け取る（値は読まない）
+  const addTask = useSetAtom(addTaskAtom)
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault() // フォーム送信によるページの再読み込みを止める
     const trimmed = title.trim()
     if (trimmed === '') return
-    onAdd(trimmed) // 親（App）から受け取った関数を呼ぶ
+    addTask(trimmed) // 書き込み用atomを実行する
     setTitle('') // 入力欄を空に戻す
   }
 
@@ -29,12 +28,11 @@ function TodoForm({ onAdd, disabled }: TodoFormProps) {
         placeholder="やることを入力"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
-        disabled={disabled}
       />
       <button
         className="todo-form__button"
         type="submit"
-        disabled={disabled || title.trim() === ''}
+        disabled={title.trim() === ''}
       >
         追加
       </button>
