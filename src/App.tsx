@@ -1,4 +1,4 @@
-import { useAtom } from 'jotai'
+import { useSetAtom } from 'jotai'
 import { useEffect, useState } from 'react'
 import { fetchTasks } from './api/todos'
 import FilterButtons from './components/FilterButtons'
@@ -10,7 +10,7 @@ import type { Task } from './types/todo'
 
 function App() {
   // タスクの配列は atom に置く。読み書きの形は useState と同じ
-  const [tasks, setTasks] = useAtom(tasksAtom)
+  const setTasks = useSetAtom(tasksAtom)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   // 再試行ボタンで1増やす。useEffect の依存配列に入れて、変わったら取得し直す
@@ -51,32 +51,12 @@ function App() {
     setReloadKey(reloadKey + 1)
   }
 
-  // 追加：元の配列を展開してコピーし、末尾に新しいタスクを足した「新しい配列」を作る
-  const addTask = (title: string) => {
-    const newTask: Task = { id: Date.now(), title, completed: false }
-    setTasks([...tasks, newTask])
-  }
-
-  // 削除：指定した id 以外を残した新しい配列を作る（filter）
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id))
-  }
-
-  // 完了の切り替え：指定した id のタスクだけ、completed を反転したコピーに差し替える（map）
-  const toggleTask = (id: number) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
-    )
-  }
-
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto max-w-xl rounded-xl bg-white p-6 shadow-md">
         <h1 className="mb-6 text-2xl font-bold text-slate-800">ミニTODO</h1>
 
-        <TodoForm onAdd={addTask} disabled={isLoading} />
+        <TodoForm disabled={isLoading} />
 
         <FilterButtons />
 
@@ -103,7 +83,7 @@ function App() {
           </p>
         ) : (
           <>
-            <TodoList onToggle={toggleTask} onDelete={deleteTask} />
+            <TodoList />
             <TaskCount />
           </>
         )}
