@@ -3,7 +3,7 @@
 - リポジトリ：[SK-Shun/mini-todo](https://github.com/SK-Shun/mini-todo)
 - ハンズオンガイド：[ミニTODOアプリ ハンズオンガイド](https://claude.ai/code/artifact/dec6f9d9-59ed-48e9-89b2-8464756f49cd)
 
-## jotai導入
+## Jotai導入
 
 - 続編ガイド：[ミニTODO × Jotai 続編ガイド](https://claude.ai/code/artifact/a407b5f5-8f6f-46ae-a412-1af3ed3a07f3)
 
