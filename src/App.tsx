@@ -1,28 +1,16 @@
+import { useAtom } from 'jotai'
 import { useEffect, useState } from 'react'
 import { fetchTasks } from './api/todos'
 import FilterButtons from './components/FilterButtons'
+import TaskCount from './components/TaskCount'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
-import type { Filter, Task } from './types/todo'
-import { useAtomValue } from 'jotai'
-import { filterAtom } from './state/todo'
-
-// 絞り込み条件に合うタスクだけを返す（引数と戻り値に型を付けた関数）
-function filterTasks(tasks: Task[], filter: Filter): Task[] {
-  switch (filter) {
-    case 'active':
-      return tasks.filter((task) => !task.completed)
-    case 'completed':
-      return tasks.filter((task) => task.completed)
-    case 'all':
-      return tasks
-  }
-}
+import { tasksAtom } from './state/todo'
+import type { Task } from './types/todo'
 
 function App() {
-  // state：タスクの配列。最初は空で、APIから取得できたら入れ替える
-  const [tasks, setTasks] = useState<Task[]>([])
-  const filter = useAtomValue(filterAtom)
+  // タスクの配列は atom に置く。読み書きの形は useState と同じ
+  const [tasks, setTasks] = useAtom(tasksAtom)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   // 再試行ボタンで1増やす。useEffect の依存配列に入れて、変わったら取得し直す
@@ -54,7 +42,7 @@ function App() {
     return () => {
       controller.abort()
     }
-  }, [reloadKey])
+  }, [reloadKey, setTasks])
 
   // 再試行：表示を「通信中」に戻し、reloadKey を変えて effect をもう一度動かす
   const retry = () => {
@@ -82,10 +70,6 @@ function App() {
       ),
     )
   }
-
-  // 派生データ：state から毎回計算する値（state には入れない）
-  const visibleTasks = filterTasks(tasks, filter)
-  const activeCount = tasks.filter((task) => !task.completed).length
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
@@ -119,8 +103,8 @@ function App() {
           </p>
         ) : (
           <>
-            <TodoList tasks={visibleTasks} onToggle={toggleTask} onDelete={deleteTask} />
-            <p className="mt-4 text-sm text-slate-600">未完了：{activeCount} 件</p>
+            <TodoList onToggle={toggleTask} onDelete={deleteTask} />
+            <TaskCount />
           </>
         )}
       </div>
