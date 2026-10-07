@@ -2,11 +2,7 @@ import { useSetAtom } from 'jotai'
 import { useState, type SubmitEvent } from 'react'
 import { addTaskAtom } from '../state/todo'
 
-type TodoFormProps = {
-  disabled: boolean
-}
-
-function TodoForm({ disabled }: TodoFormProps) {
+function TodoForm() {
   // 入力中の文字列はこのコンポーネントだけが使うので、useState のままにする
   const [title, setTitle] = useState('')
   // 書き込み用atomを呼ぶ関数だけを受け取る（値は読まない）
@@ -32,12 +28,11 @@ function TodoForm({ disabled }: TodoFormProps) {
         placeholder="やることを入力"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
-        disabled={disabled}
       />
       <button
         className="todo-form__button"
         type="submit"
-        disabled={disabled || title.trim() === ''}
+        disabled={title.trim() === ''}
       >
         追加
       </button>
