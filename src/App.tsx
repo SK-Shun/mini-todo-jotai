@@ -4,6 +4,8 @@ import FilterButtons from './components/FilterButtons'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
 import type { Filter, Task } from './types/todo'
+import { useAtomValue } from 'jotai'
+import { filterAtom } from './state/todo'
 
 // 絞り込み条件に合うタスクだけを返す（引数と戻り値に型を付けた関数）
 function filterTasks(tasks: Task[], filter: Filter): Task[] {
@@ -20,7 +22,7 @@ function filterTasks(tasks: Task[], filter: Filter): Task[] {
 function App() {
   // state：タスクの配列。最初は空で、APIから取得できたら入れ替える
   const [tasks, setTasks] = useState<Task[]>([])
-  const [filter, setFilter] = useState<Filter>('all')
+  const filter = useAtomValue(filterAtom)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   // 再試行ボタンで1増やす。useEffect の依存配列に入れて、変わったら取得し直す
@@ -92,7 +94,7 @@ function App() {
 
         <TodoForm onAdd={addTask} disabled={isLoading} />
 
-        <FilterButtons current={filter} onChange={setFilter} />
+        <FilterButtons />
 
         {errorMessage && (
           <div
