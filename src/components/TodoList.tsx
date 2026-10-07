@@ -1,23 +1,29 @@
 import { useAtomValue } from 'jotai'
-import { visibleTasksAtom } from '../state/todo'
+import { taskAtomsAtom, visibleCountAtom } from '../state/todo'
 import TodoItem from './TodoItem'
 
 function TodoList() {
-  // 絞り込み済みの一覧を、派生atomから直接読む
-  const tasks = useAtomValue(visibleTasksAtom)
-
-  if (tasks.length === 0) {
-    return <p className="py-6 text-center text-sm text-slate-500">表示するタスクはありません</p>
-  }
+  // 1件ごとの atom の配列。追加・削除では変わるが、チェックの切り替えでは変わらない
+  const taskAtoms = useAtomValue(taskAtomsAtom)
 
   return (
-    <ul className="divide-y divide-slate-200 border-y border-slate-200">
-      {/* map：タスクの配列を、1件ずつ <TodoItem> に変換した配列にする */}
-      {tasks.map((task) => (
-        <TodoItem key={task.id} task={task} />
-      ))}
-    </ul>
+    <>
+      {/* 表示する行が1つもないとき（中身が空のとき）は、枠線ごと隠す */}
+      <ul className="divide-y divide-slate-200 border-y border-slate-200 empty:hidden">
+        {taskAtoms.map((taskAtom) => (
+          <TodoItem key={`${taskAtom}`} taskAtom={taskAtom} />
+        ))}
+      </ul>
+      <EmptyMessage />
+    </>
   )
+}
+
+function EmptyMessage() {
+  // 件数（数値）だけを読むので、件数が変わったときだけ再レンダリングされる
+  const visibleCount = useAtomValue(visibleCountAtom)
+  if (visibleCount > 0) return null
+  return <p className="py-6 text-center text-sm text-slate-500">表示するタスクはありません</p>
 }
 
 export default TodoList

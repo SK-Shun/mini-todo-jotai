@@ -9,8 +9,10 @@ import {
   fetchedTasksAtom,
   filterAtom,
   filterTasks,
+  matchesFilter,
   resetTasksAtom,
   tasksAtom,
+  taskAtomsAtom,
   tasksReadyAtom,
   toggleTaskAtom,
   visibleTasksAtom,
@@ -50,6 +52,12 @@ describe('filterTasks（ただの関数）', () => {
 
   it('すべてなら同じ配列をそのまま返す', () => {
     expect(filterTasks(sampleTasks, 'all')).toBe(sampleTasks)
+  })
+
+  it('matchesFilter は1件ずつ判定する', () => {
+    expect(matchesFilter(sampleTasks[0], 'active')).toBe(true)
+    expect(matchesFilter(sampleTasks[0], 'completed')).toBe(false)
+    expect(matchesFilter(sampleTasks[1], 'all')).toBe(true)
   })
 })
 
@@ -99,6 +107,23 @@ describe('タスクの操作（store を使った atom のテスト）', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as Task[]
     expect(saved[0]).toEqual({ id: 1, title: '牛乳を買う', completed: true })
+  })
+
+  it('1件切り替えても、1件ごとの atom の配列は同じものが返る（splitAtom）', () => {
+    const before = store.get(taskAtomsAtom)
+    store.set(toggleTaskAtom, 1)
+    const after = store.get(taskAtomsAtom)
+
+    expect(after).toBe(before)
+    expect(store.get(after[0]).completed).toBe(true)
+  })
+
+  it('追加すると、1件ごとの atom の配列は新しくなる', () => {
+    const before = store.get(taskAtomsAtom)
+    store.set(addTaskAtom, '洗濯する')
+
+    expect(store.get(taskAtomsAtom)).not.toBe(before)
+    expect(store.get(taskAtomsAtom)).toHaveLength(4)
   })
 
   it('サンプルに戻すと、保存が消える', () => {

@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import { RESET, atomWithRefresh, atomWithStorage, unwrap } from 'jotai/utils'
+import { RESET, atomWithRefresh, atomWithStorage, splitAtom, unwrap } from 'jotai/utils'
 import { fetchTasks } from '../api/todos'
 import type { Filter, Task } from '../types/todo'
 
@@ -46,8 +46,27 @@ export function filterTasks(tasks: Task[], filter: Filter): Task[] {
   }
 }
 
+// 1件のタスクが絞り込み条件に合うか
+export function matchesFilter(task: Task, filter: Filter): boolean {
+  switch (filter) {
+    case 'active':
+      return !task.completed
+    case 'completed':
+      return task.completed
+    case 'all':
+      return true
+  }
+}
+
 // 派生atom：画面に出すタスク。tasksAtom か filterAtom が変わると計算し直される
 export const visibleTasksAtom = atom((get) => filterTasks(get(tasksAtom), get(filterAtom)))
+
+// 派生atom：画面に出すタスクの件数（「表示するタスクはありません」の判定用）
+export const visibleCountAtom = atom((get) => get(visibleTasksAtom).length)
+
+// 1件ごとの atom を並べた配列。id をキーにするので、同じタスクにはいつも同じ atom が使われる。
+// タスクの中身が変わっても、id の並びが同じなら配列そのものは前と同じものが返る
+export const taskAtomsAtom = splitAtom(tasksAtom, (task) => task.id)
 
 // 派生atom：未完了の件数
 export const activeCountAtom = atom((get) => get(tasksAtom).filter((task) => !task.completed).length)

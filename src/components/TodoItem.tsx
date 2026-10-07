@@ -1,14 +1,21 @@
-import { useSetAtom } from 'jotai'
-import { deleteTaskAtom, toggleTaskAtom } from '../state/todo'
+import { useAtomValue, useSetAtom, type Atom } from 'jotai'
+import { deleteTaskAtom, filterAtom, matchesFilter, toggleTaskAtom } from '../state/todo'
 import type { Task } from '../types/todo'
 
 type TodoItemProps = {
-  task: Task
+  taskAtom: Atom<Task>
 }
 
-function TodoItem({ task }: TodoItemProps) {
+function TodoItem({ taskAtom }: TodoItemProps) {
+  // 自分の1件だけを読む。ほかのタスクが変わっても、この行は再レンダリングされない
+  const task = useAtomValue(taskAtom)
+  const filter = useAtomValue(filterAtom)
   const toggleTask = useSetAtom(toggleTaskAtom)
   const deleteTask = useSetAtom(deleteTaskAtom)
+
+  // 絞り込み条件に合わない行は何も描かない（フックはすべてこれより上で呼ぶ）
+  if (!matchesFilter(task, filter)) return null
+
   // 分割代入：task.id・task.title・task.completed を同名の変数に取り出す
   const { id, title, completed } = task
 
